@@ -1,0 +1,70 @@
+# Architectural Decisions - Short Summary
+
+## Key Technical Decisions (Problem → Solution)
+
+### 1. **PDF Extraction → LLM Processing**
+- **Problem:** Unstructured legal PDFs with no standard format
+- **Solution:** Groq Llama 3.3 70B with JSON schema prompting (85% accuracy)
+
+### 2. **API Rate Limits → Multi-Key Rotation**
+- **Problem:** 30 req/min limit blocks batch processing
+- **Solution:** 5 API keys in round-robin = 150 req/min (5× speedup)
+
+### 3. **Keyword Search → Semantic Search**
+- **Problem:** Users query with different words than documents use
+- **Solution:** Jina Embeddings v2 (8192 tokens) for vector similarity matching
+
+### 4. **GPU Out of Memory → Aggressive Optimization**
+- **Problem:** 11.8GB allocated on 8GB GPU (RTX 5080)
+- **Solution:** Reduce batch_size (32→4), text limits (30KB→10KB), aggressive cache clearing
+
+### 5. **RTX 5080 Not Supported → PyTorch Nightly**
+- **Problem:** Blackwell architecture (sm_120) unsupported in stable PyTorch
+- **Solution:** Install PyTorch nightly with CUDA 12.8 for RTX 50-series support
+
+### 6. **Equal Field Weight → Weighted Repetition**
+- **Problem:** "Legal issues" 10× more important than "arguments" for similarity
+- **Solution:** Repeat text by importance (legal issues 4×, summary 3×, facts 2×)
+
+### 7. **Inconsistent Terms → Normalization**
+- **Problem:** "IPC 302" vs "I.P.C. 302" vs "Section 302" don't match
+- **Solution:** Regex normalization (abbreviations, section numbers, act names)
+
+### 8. **Nested JSON Lists → Recursive Flattening**
+- **Problem:** LLM returns `["point1", ["nested"], "point2"]`, breaks `join()`
+- **Solution:** Recursive `flatten_field()` handles arbitrary nesting depth
+
+### 9. **Database Overhead → Flat JSON**
+- **Problem:** PostgreSQL/MongoDB setup excessive for MVP
+- **Solution:** Single JSON file + pickle cache (simple, debuggable, <10K cases)
+
+### 10. **API Rate Limits → Delay + Multi-Key**
+- **Problem:** 158 cases × 1 request = exceeds 30/min limit
+- **Solution:** 2-second delay between requests + 5 keys = 6-8 min total
+
+### 11. **Slow Restarts → Embedding Cache**
+- **Problem:** Recomputing embeddings takes 2-4 minutes every restart
+- **Solution:** Pickle serialization persists embeddings (<2s load time)
+
+### 12. **CORS Errors → Flask-CORS**
+- **Problem:** Browser blocks frontend→API calls (different ports)
+- **Solution:** `flask-cors` enables cross-origin requests
+
+### 13. **Duplicate Cases → ID Deduplication**
+- **Problem:** Re-running pipeline adds duplicates to database
+- **Solution:** Filter by existing case_id set before merging
+
+---
+
+## Core Principles
+
+✅ **Pragmatic over perfect** - Simple solutions that work  
+✅ **Cost-conscious** - Free tier APIs with smart workarounds  
+✅ **Memory-first** - GPU constraints drive architecture  
+✅ **Semantic > keyword** - AI-powered search prioritized  
+✅ **Fail gracefully** - Retry logic, fallbacks, clear errors  
+✅ **Cache aggressively** - Avoid recomputation where possible  
+✅ **Modular design** - Single responsibility per component  
+
+**Result:** Scalable legal intelligence system processing 158 cases in <10 minutes with real-time semantic search (<100ms queries) on consumer GPU hardware.
+

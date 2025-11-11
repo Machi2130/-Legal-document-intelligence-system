@@ -7972,5 +7972,87 @@
     "api_key_index": 1,
     "source": "data/pdf/year=2022/court=33_10/bench=hc_cis_mas/HCMA010000031996_1_2022-04-29.pdf",
     "local_pdf": "data/madras_cases\\HCMA010000031996_1_2022-04-29.pdf"
+  },
+  {
+    "case_id": "CO.PET. 71/2007",
+    "court": "Delhi High Court",
+    "date": "2025-04-24",
+    "petitioners": [
+      "KOTAK MAHINDRA BANK LTD."
+    ],
+    "respondents": [
+      "HERMONITE ASSOCIATES LTD."
+    ],
+    "judges": [
+      "HON'BLE MS. JUSTICE TARA VITASTA GANJU"
+    ],
+    "case_type": "Company Petition",
+    "acts_referred": [],
+    "sections": [],
+    "predicted_outcome": "Partly Allowed",
+    "primary_legal_issue": "The court is considering the petition filed by Kotak Mahindra Bank Ltd. against Hermonite Associates Ltd.",
+    "summary": "The Delhi High Court has listed the matter for hearing on 14.05.2025. The court has passed an order in the company petition filed by Kotak Mahindra Bank Ltd. against Hermonite Associates Ltd. The details of the petition and the order are not provided in the given text.",
+    "facts": "Kotak Mahindra Bank Ltd. has filed a company petition against Hermonite Associates Ltd. The petition is being heard by the Delhi High Court.",
+    "arguments": "No key arguments are mentioned in the given text.",
+    "judgment_reasoning": "The court has listed the matter for hearing on 14.05.2025, but the reasoning behind this decision is not provided in the given text.",
+    "key_legal_points": [],
+    "legal_issues": [],
+    "precedents_cited": [],
+    "citations": [],
+    "full_judgment_text": "$~CO.12 \n* IN  THE  HIGH  COURT  OF  DELHI  AT  NEW  DELHI  \n+  CO.PET. 71/2007 \n KOTAK MAHINDRA BANK LTD.   .....Petitioner \n    Through: None. \n \n    versus \n \n HERMONITE ASSOCIATES LTD.   .....Respondent \nThrough: Mr. Amit Agrawal, Standing Counsel \nwith Ms. Sana Jain, Adv. for OL \nMr. Shubhendu Bhattacharya, Adv. \nfor Applicant in CO.APPL. 299/2025 \n \n CORAM:  \n HON'BLE MS. JUSTICE TARA VITASTA GANJU  \n    O R D E R  \n%    24.04.2025  \nCO.APPL. 299/2025 [Directions] \n1. List on 14.05.2025.  \n \n \nTARA VITASTA GANJU, J  \nAPRIL 24, 2025/jn  \n     Click here to check corrigendum, if any  \nThis is a digitally signed order.\nThe authenticity of the order can be re-verified from Delhi High Court Order Portal by scanning the QR code shown above.\nThe Order is downloaded from the DHC Server on 28/04/2025 at 15:54:11",
+    "text_length": 820,
+    "extraction_model": "llama-3.3-70b-versatile",
+    "extraction_timestamp": "2025-11-11T18:35:21.639339",
+    "api_key_index": 1,
+    "source": "data/pdf/year=2021/court=7_26/bench=dhcdb/DLHC010006942007_1_2025-04-24.pdf",
+    "local_pdf": "data/delhi_cases\\DLHC010006942007_1_2025-04-24.pdf"
+  },
+  {
+    "case_id": "S.A.No.914 of 1996",
+    "court": "Madras High Court",
+    "date": "2021-02-26",
+    "petitioners": [
+      "C.Thailappa Varma"
+    ],
+    "respondents": [
+      "Kunji Alias Chinnasamy",
+      "M.M.Samiyullah",
+      "M.M.Ajeesullah",
+      "M.M.Afsarullah",
+      "M.M.Ashrafullah"
+    ],
+    "judges": [
+      "THE HONOURABLE MR.JUSTICE RMT.TEEKAA RAMAN"
+    ],
+    "case_type": "Second Appeal",
+    "acts_referred": [
+      "Code of Civil Procedure"
+    ],
+    "sections": [
+      "Section 100"
+    ],
+    "predicted_outcome": "Dismissed",
+    "primary_legal_issue": "The appeal was dismissed due to lack of representation from both parties.",
+    "summary": "The appeal was filed under Section 100 of the Code of Civil Procedure against a judgment and decree dated 25.07.1995. The appeal was dismissed for default due to lack of representation from both parties on 18.02.2021 and 26.02.2021.",
+    "facts": "The appeal was filed by C.Thailappa Varma against the judgment and decree dated 25.07.1995 rendered in A.S.No.17 of 1991. The Sub Judge, Dharmapuri, had confirmed the decree and judgment dated 29.07.1991 in O.S.No.340 of 1982, on the file of the District Munsiff Court, Dharmapuri.",
+    "arguments": "No arguments were presented as there was no representation from both parties.",
+    "judgment_reasoning": "The court dismissed the appeal for default due to lack of representation from both parties.",
+    "key_legal_points": [
+      "Section 100 of the Code of Civil Procedure",
+      "Default dismissal"
+    ],
+    "legal_issues": [
+      "Lack of representation",
+      "Default dismissal"
+    ],
+    "precedents_cited": [],
+    "citations": [],
+    "full_judgment_text": "IN THE HIGH COURT OF JUDICATURE AT MADRAS\nDATED  : 26.02.2021\nCORAM\nTHE HONOURABLE MR.JUSTICE RMT.TEEKAA RAMAN\nS.A.No.914 of 1996\nC.Thailappa Varma ... Appellant/Plaintiff\nVs.\n1.Kunji Alias Chinnasamy\n2.M.M.Samiyullah\n3.M.M.Ajeesullah\n4.M.M.Afsarullah\n5.M.M.Ashrafullah     ... Respondents/Defendants\nPRAYER: This Appeal has been filed under Section 100 of Code of\nCivil Procedure against the judgment and decree dated 25.07.1995\nrendered in A.S.No.17 of 1991, on the file of the Sub Judge,\nDharmapuri, confirming the decree and Judgment dated 29.07.1991\nin O.S.No.340 of 1982, on the file of the District Munsiff\nCourt, Dharmapuri.\nFor Appellants :  No appearance\nFor Respondents :  No appearance\nJUDGMENT\nOn 18.02.2021, there was no representation for both the\nparties and hence, the matter was posted under the caption “for\ndismissal”.  Even today (26.02.2021), there is no representation\non either side.  Hence, this Second Appeal stands dismissed for\ndefault.  No costs.\nSd/-\n     Asst.Registrar (CS VI)\n    /true copy/\nSub Asst. Registrar\ndua\nhttps://hcservices.ecourts.gov.in/hcservices/\n\nTo\n1.TheSubordinate Judge, Dharmapuri.\n2.The District Munsiff Court, Dharmapuri.\nS.A.No.914 of 1996\nmg(co)\naa19/03/2021\nhttps://hcservices.ecourts.gov.in/hcservices/",
+    "text_length": 1261,
+    "extraction_model": "llama-3.3-70b-versatile",
+    "extraction_timestamp": "2025-11-11T18:35:28.515283",
+    "api_key_index": 1,
+    "source": "data/pdf/year=2021/court=33_10/bench=hc_cis_mas/HCMA010000081996_1_2021-02-26.pdf",
+    "local_pdf": "data/madras_cases\\HCMA010000081996_1_2021-02-26.pdf"
   }
 ]

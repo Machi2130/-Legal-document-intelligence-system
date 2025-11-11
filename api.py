@@ -1,11 +1,10 @@
 """
 api.py
 ======
-Flask REST API for Legal Intelligence System
-Connects with your HTML frontend
+Flask REST API - FIXED to use existing methods
 """
 
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
 import os
 import sys
@@ -24,12 +23,24 @@ from analytics import LegalAnalytics
 
 # Initialize Flask app
 app = Flask(__name__)
-CORS(app)  # Enable CORS for frontend
+CORS(app)
 
 # Global variables
 JUDGMENTS_FILE = "output/judgments.json"
 
-# Initialize components
+# ============================================
+# FRONTEND ROUTES
+# ============================================
+
+@app.route('/')
+def serve_frontend():
+    """Serve the main HTML frontend"""
+    return send_from_directory('.', 'index.html')
+
+# ============================================
+# HELPER FUNCTIONS
+# ============================================
+
 def get_search_engine():
     """Get or create search engine instance"""
     if not os.path.exists(JUDGMENTS_FILE):
@@ -48,14 +59,13 @@ def get_analytics_engine():
         return None
     return LegalAnalytics(JUDGMENTS_FILE)
 
-
-# =============================================================================
-# API ENDPOINTS
-# =============================================================================
+# ============================================
+# API ROUTES
+# ============================================
 
 @app.route('/api/status', methods=['GET'])
 def get_status():
-
+    """Get system status and statistics"""
     try:
         if not os.path.exists(JUDGMENTS_FILE):
             return jsonify({
@@ -63,11 +73,9 @@ def get_status():
                 "total_cases": 0,
                 "total_courts": 0,
                 "total_judges": 0,
-                "total_acts": 0,
-                "message": "No data available. Please download data first."
+                "total_acts": 0
             })
         
-        # Load judgments
         with open(JUDGMENTS_FILE, 'r', encoding='utf-8') as f:
             cases = json.load(f)
         
@@ -77,9 +85,16 @@ def get_status():
         acts = set()
         
         for case in cases:
-            courts.add(case.get('court', 'Unknown'))
-            judges.update(case.get('judges', []))
-            acts.update(case.get('acts_referred', []))
+            if case.get('court'):
+                courts.add(case['court'])
+            
+            case_judges = case.get('judges', [])
+            if isinstance(case_judges, list):
+                judges.update([j for j in case_judges if j])
+            
+            case_acts = case.get('acts_referred', [])
+            if isinstance(case_acts, list):
+                acts.update([a for a in case_acts if a])
         
         return jsonify({
             "status": "ready",
@@ -88,22 +103,20 @@ def get_status():
             "total_judges": len(judges),
             "total_acts": len(acts)
         })
-    
+        
     except Exception as e:
+        print(f"ERROR /api/status: {str(e)}")
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/api/search', methods=['POST'])
 def search_cases():
-   
+    """Search cases using keyword search"""
     try:
         search_engine = get_search_engine()
         if not search_engine:
             return jsonify({"error": "No data available"}), 404
         
-        data = request.get_json()
-        
-        # Extract search parameters
+        data = request.get_json() or {}
         query = data.get('query', '')
         court = data.get('court', '')
         outcome = data.get('outcome', '')
@@ -111,37 +124,35 @@ def search_cases():
         
         # Perform search
         results = search_engine.search(
+            keyword=query if query else None,
             court=court if court else None,
             outcome=outcome if outcome else None,
-            keyword=query if query else None
+            case_type=case_type if case_type else None
         )
         
-        # Filter by case type if provided
-        if case_type:
-            results = [
-                c for c in results 
-                if case_type.lower() in c.get('case_type', '').lower()
-            ]
+        # Limit results
+        results = results[:50]
         
         return jsonify({
-            "results": results[:50],  # Limit to 50 results
+            "results": results,
             "count": len(results)
         })
-    
+        
     except Exception as e:
+        print(f"ERROR /api/search: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/api/similarity', methods=['POST'])
 def find_similar_cases():
-   
+    """Find similar cases using semantic search"""
     try:
         similarity_engine = get_similarity_engine()
         if not similarity_engine:
             return jsonify({"error": "No data available"}), 404
         
-        data = request.get_json()
-        
+        data = request.get_json() or {}
         query_text = data.get('query_text', '')
         top_k = data.get('top_k', 5)
         
@@ -164,203 +175,162 @@ def find_similar_cases():
             "results": formatted_results,
             "count": len(formatted_results)
         })
-    
+        
     except Exception as e:
+        print(f"ERROR /api/similarity: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/api/analytics/<analysis_type>', methods=['GET'])
 def get_analytics(analysis_type):
-    
+    """Get analytics data"""
     try:
         analytics_engine = get_analytics_engine()
         if not analytics_engine:
             return jsonify({"error": "No data available"}), 404
         
         if analysis_type == 'judges':
-            # Analyze judges
-            judge_stats = {}
-            for case in analytics_engine.cases:
-                judges = case.get('judges', [])
-                outcome = case.get('predicted_outcome', 'Unknown')
-                
-                for judge in judges:
-                    if judge not in judge_stats:
-                        judge_stats[judge] = {
-                            'total_cases': 0,
-                            'outcomes': {}
-                        }
-                    
-                    judge_stats[judge]['total_cases'] += 1
-                    judge_stats[judge]['outcomes'][outcome] = judge_stats[judge]['outcomes'].get(outcome, 0) + 1
-            
-            # Format and sort
-            result = []
-            for judge, stats in judge_stats.items():
-                total = stats['total_cases']
-                percentages = {
-                    outcome: round((count / total) * 100, 1)
-                    for outcome, count in stats['outcomes'].items()
-                }
-                
-                result.append({
-                    'judge': judge,
-                    'total_cases': total,
-                    'outcomes': stats['outcomes'],
-                    'outcome_percentages': percentages
-                })
-            
-            result.sort(key=lambda x: x['total_cases'], reverse=True)
-            return jsonify({"data": result[:20]})  # Top 20
-        
+            data = analytics_engine.judge_statistics()
         elif analysis_type == 'acts':
-            # Most cited acts
-            act_counts = {}
-            for case in analytics_engine.cases:
-                acts = case.get('acts_referred', [])
-                for act in acts:
-                    act_counts[act] = act_counts.get(act, 0) + 1
-            
-            result = [
-                {"act": act, "total_cases": count}
-                for act, count in sorted(act_counts.items(), key=lambda x: x[1], reverse=True)
-            ]
-            
-            return jsonify({"data": result[:20]})  # Top 20
-        
+            data = analytics_engine.most_cited_acts()
         elif analysis_type == 'courts':
-            # Court distribution
-            court_stats = {}
-            for case in analytics_engine.cases:
-                court = case.get('court', 'Unknown')
-                if court not in court_stats:
-                    court_stats[court] = {
-                        'total_cases': 0,
-                        'outcomes': {}
-                    }
-                
-                court_stats[court]['total_cases'] += 1
-                outcome = case.get('predicted_outcome', 'Unknown')
-                court_stats[court]['outcomes'][outcome] = court_stats[court]['outcomes'].get(outcome, 0) + 1
-            
-            return jsonify({"data": court_stats})
-        
+            data = analytics_engine.court_distribution()
         elif analysis_type == 'outcomes':
-            # Outcome distribution
-            outcome_counts = {}
-            for case in analytics_engine.cases:
-                outcome = case.get('predicted_outcome', 'Unknown')
-                outcome_counts[outcome] = outcome_counts.get(outcome, 0) + 1
-            
-            return jsonify({"data": outcome_counts})
-        
+            data = analytics_engine.outcome_distribution()
         else:
             return jsonify({"error": "Invalid analysis type"}), 400
-    
+        
+        # Limit to top 20
+        data = data[:20] if isinstance(data, list) else data
+        
+        return jsonify({"data": data})
+        
     except Exception as e:
+        print(f"ERROR /api/analytics/{analysis_type}: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/api/download', methods=['POST'])
 def download_and_process():
-    
+    """Download PDFs and process them - FIXED VERSION"""
     try:
+        data = request.get_json() or {}
+        year = str(data.get('year', 2023))  # Convert to string
+        max_files = data.get('max_files', 10)
+        
+        print(f"\n{'='*70}")
+        print(f"📥 API Download Request")
+        print(f"   Year: {year}, Max files: {max_files}")
+        print(f"{'='*70}\n")
+        
         # Check API key
-        groq_api_key = os.getenv("GROQ_API_KEY")
-        if not groq_api_key:
+        if not os.getenv("GROQ_API_KEY"):
             return jsonify({"error": "GROQ_API_KEY not set"}), 500
         
-        data = request.get_json()
-        year = data.get('year', '2023')
-        max_files = data.get('max_files', 20)
-        
-        # Step 1: Fetch PDFs
+        # STEP 1: Fetch data using EXISTING methods
+        print("STEP 1: Fetching PDFs from S3...")
         fetcher = DataFetcher()
         
         delhi_data = fetcher.fetch_court_data('delhi', year=year, max_files=max_files)
         madras_data = fetcher.fetch_court_data('madras', year=year, max_files=max_files)
+        cases_data = delhi_data + madras_data
         
-        all_fetched = delhi_data + madras_data
-        files_downloaded = len(all_fetched)
+        if not cases_data:
+            return jsonify({"error": "No cases downloaded"}), 500
         
-        if files_downloaded == 0:
-            return jsonify({"error": "No files downloaded"}), 404
+        print(f"✅ Downloaded {len(cases_data)} PDFs total")
         
-        # Step 2: Extract with Groq
-        extractor = EntityExtractor(groq_api_key=groq_api_key)
-        extracted_cases = extractor.extract_batch(all_fetched)
-        cases_processed = len(extracted_cases)
+        # STEP 2: Extract entities using EXISTING batch method
+        print("\nSTEP 2: Extracting entities with LLM...")
+        extractor = EntityExtractor()
+        extracted_cases = extractor.extract_batch(cases_data)
         
-        # Step 3: Preprocess
+        print(f"✅ Extracted {len(extracted_cases)} cases")
+        
+        # STEP 3: Preprocess
+        print("\nSTEP 3: Preprocessing...")
         preprocessor = DataPreprocessor()
         processed_cases = preprocessor.process(extracted_cases)
         
-        # Step 4: Merge with existing data
+        print(f"✅ Processed {len(processed_cases)} cases")
+        
+        # STEP 4: Load existing and merge
         existing_cases = []
         if os.path.exists(JUDGMENTS_FILE):
             with open(JUDGMENTS_FILE, 'r', encoding='utf-8') as f:
                 existing_cases = json.load(f)
         
-        # Remove duplicates
-        existing_ids = {c.get('case_id') for c in existing_cases}
-        new_cases = [c for c in processed_cases if c.get('case_id') not in existing_ids]
-        
-        # Combine
+        # Merge (avoid duplicates)
+        existing_ids = {case.get('case_id') for case in existing_cases}
+        new_cases = [case for case in processed_cases if case.get('case_id') not in existing_ids]
         all_cases = existing_cases + new_cases
         
-        # Save
+        # STEP 5: Save
         os.makedirs("output", exist_ok=True)
         with open(JUDGMENTS_FILE, 'w', encoding='utf-8') as f:
             json.dump(all_cases, f, indent=2, ensure_ascii=False)
         
-        # Rebuild similarity index
-        try:
-            if os.path.exists("output/embeddings.pkl"):
-                os.remove("output/embeddings.pkl")
-            
-            similarity_engine = SimilarityCaseFinder(JUDGMENTS_FILE)
-        except:
-            pass  # Index will be rebuilt on next similarity search
+        print(f"✅ Saved {len(all_cases)} total cases to database")
+        
+        # STEP 6: Delete embeddings cache to force rebuild
+        for cache_file in ["output/embeddings.pkl", "output/embeddings_jina.pkl"]:
+            if os.path.exists(cache_file):
+                os.remove(cache_file)
+                print(f"🗑️  Deleted cache: {cache_file}")
+        
+        print(f"\n{'='*70}")
+        print(f"✅ DOWNLOAD COMPLETE")
+        print(f"{'='*70}\n")
         
         return jsonify({
-            "files_downloaded": files_downloaded,
-            "cases_processed": cases_processed,
+            "status": "success",
+            "files_downloaded": len(cases_data),
+            "cases_processed": len(processed_cases),
             "cases_added": len(new_cases),
             "total_cases": len(all_cases)
         })
-    
+        
     except Exception as e:
+        print(f"\nERROR /api/download: {str(e)}")
+        import traceback
+        traceback.print_exc()
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/debug/cases', methods=['GET'])
+def debug_cases():
+    """Debug: Show first 3 cases"""
+    try:
+        if not os.path.exists(JUDGMENTS_FILE):
+            return jsonify({
+                'total_cases': 0,
+                'error': 'No data file found'
+            })
+        
+        with open(JUDGMENTS_FILE, 'r', encoding='utf-8') as f:
+            cases = json.load(f)
+        
+        return jsonify({
+            'total_cases': len(cases),
+            'sample_cases': cases[:3] if len(cases) > 0 else [],
+            'sample_fields': list(cases[0].keys()) if len(cases) > 0 else []
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/health', methods=['GET'])
 def health_check():
     """Health check endpoint"""
-    return jsonify({
-        "status": "ok",
-        "timestamp": datetime.now().isoformat()
-    })
-
-
-# =============================================================================
-# RUN SERVER
-# =============================================================================
+    return jsonify({"status": "ok"})
 
 if __name__ == '__main__':
     print("\n" + "="*70)
-    print("🚀 LEGAL INTELLIGENCE SYSTEM - API SERVER")
+    print("🚀 LegalVault API Server Starting...")
     print("="*70)
-    print("\n📡 Starting Flask server on http://localhost:5000")
-    print("\nAPI Endpoints:")
-    print("  GET  /api/status         - System status")
-    print("  POST /api/search         - Search cases")
-    print("  POST /api/similarity     - Find similar cases")
-    print("  GET  /api/analytics/<type> - Get analytics")
-    print("  POST /api/download       - Download & process data")
-    print("  GET  /api/health         - Health check")
-    print("\n" + "="*70)
-    print("\n⚠️  Make sure GROQ_API_KEY is set:")
-    print(f"   GROQ_API_KEY: {'✅ Set' if os.getenv('GROQ_API_KEY') else '❌ Not Set'}")
-    print("\n" + "="*70)
+    print(f"Frontend: http://localhost:5000")
+    print(f"API Base: http://localhost:5000/api")
+    print(f"Debug: http://localhost:5000/api/debug/cases")
+    print("="*70 + "\n")
     
     app.run(host='0.0.0.0', port=5000, debug=True)

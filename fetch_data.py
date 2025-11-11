@@ -15,9 +15,8 @@ from botocore import UNSIGNED
 from typing import List, Dict
 import re
 
-class DataFetcher:
 
-    
+class DataFetcher:
     COURTS = {
         'delhi': {
             'code': '7_26',
@@ -51,6 +50,7 @@ class DataFetcher:
         bench = self.extract_bench_from_path(json_key)
         if not bench:
             return None
+        
         filename = os.path.basename(json_key).replace('.json', '.pdf')
         return f"data/pdf/year={year}/court={court_code}/bench={bench}/{filename}"
     
@@ -86,11 +86,10 @@ class DataFetcher:
                     f_out.write(f_in.read())
             
             return full_text
-        
+            
         except Exception as e:
-            print(f"      ❌ Error: {str(e)}")
+            print(f"   ❌ Error: {str(e)}")
             return ""
-        
         finally:
             if tmp_path and os.path.exists(tmp_path):
                 try:
@@ -100,8 +99,6 @@ class DataFetcher:
                     pass
     
     def fetch_court_data(self, court_key: str, year: str = "2023", max_files: int = 20) -> List[Dict]:
-      
-        
         if court_key not in self.COURTS:
             print(f"❌ Invalid court key: {court_key}")
             return []
@@ -133,34 +130,33 @@ class DataFetcher:
             print(f"📂 Found {len(json_files)} metadata files")
             
             fetched_data = []
-            
             for idx, json_key in enumerate(json_files, 1):
                 case_id = os.path.basename(json_key).replace('.json', '')
-                print(f"\n   [{idx}/{len(json_files)}] {case_id}")
+                print(f"\n  [{idx}/{len(json_files)}] {case_id}")
                 
                 # Construct PDF path
                 pdf_s3_path = self.construct_pdf_path(json_key, year, court_code)
                 if not pdf_s3_path:
-                    print(f"      ⚠️  Could not construct PDF path")
+                    print(f"   ⚠️  Could not construct PDF path")
                     continue
                 
                 # Verify PDF exists
                 try:
                     self.s3.head_object(Bucket=self.bucket, Key=pdf_s3_path)
                 except:
-                    print(f"      ❌ PDF not found")
+                    print(f"   ❌ PDF not found")
                     continue
                 
                 # Download PDF
-                print(f"      📥 Downloading...")
+                print(f"   📥 Downloading...")
                 local_pdf_path = os.path.join(local_folder, f"{case_id}.pdf")
                 pdf_text = self.download_pdf(pdf_s3_path, local_pdf_path)
                 
                 if not pdf_text or len(pdf_text) < 100:
-                    print(f"      ⚠️  Insufficient text")
+                    print(f"   ⚠️  Insufficient text")
                     continue
                 
-                print(f"      ✅ Downloaded {len(pdf_text)} chars")
+                print(f"   ✅ Downloaded {len(pdf_text)} chars")
                 
                 # Store data
                 fetched_data.append({
@@ -177,20 +173,57 @@ class DataFetcher:
             
             print(f"\n✅ Fetched {len(fetched_data)} PDFs for {court_name}")
             return fetched_data
-        
+            
         except Exception as e:
             print(f"❌ Error: {e}")
             return []
+    
+    def download_judgments(self, year: int = 2023, max_files_per_court: int = 20) -> List[Dict]:
+        """
+        API-compatible wrapper to download from both courts
+        
+        Parameters:
+        - year: Year to download (2023, 2022, 2021, etc.)
+        - max_files_per_court: Max PDFs per court
+        
+        Returns:
+        - Combined list of all cases from both courts
+        """
+        all_cases = []
+        
+        print(f"\n{'='*70}")
+        print(f"📥 DOWNLOADING JUDGMENTS FOR YEAR {year}")
+        print(f"   Max files per court: {max_files_per_court}")
+        print(f"{'='*70}\n")
+        
+        # Fetch from Delhi High Court
+        delhi_cases = self.fetch_court_data(
+            court_key='delhi',
+            year=str(year),
+            max_files=max_files_per_court
+        )
+        all_cases.extend(delhi_cases)
+        
+        # Fetch from Madras High Court
+        madras_cases = self.fetch_court_data(
+            court_key='madras',
+            year=str(year),
+            max_files=max_files_per_court
+        )
+        all_cases.extend(madras_cases)
+        
+        print(f"\n{'='*70}")
+        print(f"✅ TOTAL CASES DOWNLOADED: {len(all_cases)}")
+        print(f"   Delhi: {len(delhi_cases)}, Madras: {len(madras_cases)}")
+        print(f"{'='*70}\n")
+        
+        return all_cases
 
 
 if __name__ == "__main__":
     # Test
     fetcher = DataFetcher()
     
-    # Fetch Delhi cases
-    delhi_data = fetcher.fetch_court_data('delhi', year='2023', max_files=5)
-    print(f"\n✅ Fetched {len(delhi_data)} Delhi cases")
-    
-    # Fetch Madras cases
-    madras_data = fetcher.fetch_court_data('madras', year='2023', max_files=5)
-    print(f"\n✅ Fetched {len(madras_data)} Madras cases")
+    # Test the new API-compatible method
+    cases = fetcher.download_judgments(year=2023, max_files_per_court=3)
+    print(f"\n✅ Total downloaded: {len(cases)} cases")
